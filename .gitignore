@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.env
+.venv/
+venv/
+env/
+
+# API keys / secrets
+*apt key*.txt
+*api key*.txt
+*apikey*.txt
+*.key
+.env*
+
+# Streamlit
+.streamlit/secrets.toml
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Shortcuts / local launchers
+*.lnk
+*.bat

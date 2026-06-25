@@ -645,22 +645,37 @@ def call_claude(raw_text: str, api_keys: list, subject: str, model: str) -> dict
     raise last_err
 
 
-def call_openai(raw_text: str, api_keys: list, subject: str, model: str) -> dict:
+def call_openai(raw_text: str, api_keys: list, subject: str, model: str,
+                azure_endpoint: str = "", azure_deployment: str = "", azure_api_version: str = "2024-02-01") -> dict:
     prompt = build_prompt(raw_text, subject)
     try:
-        from openai import OpenAI
+        from openai import OpenAI, AzureOpenAI
     except ImportError:
         st.error("Run: `pip install openai`")
         st.stop()
     last_err = None
     for key in api_keys:
         try:
-            client = OpenAI(api_key=key)
-            resp = client.chat.completions.create(
-                model=model,
-                max_tokens=16000,
-                messages=[{"role": "user", "content": prompt}],
-            )
+            if azure_endpoint.strip():
+                # Azure OpenAI — deployment name is used instead of model name
+                client = AzureOpenAI(
+                    api_key=key,
+                    azure_endpoint=azure_endpoint.strip(),
+                    api_version=azure_api_version,
+                )
+                deploy = azure_deployment.strip() or model
+                resp = client.chat.completions.create(
+                    model=deploy,
+                    max_tokens=16000,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+            else:
+                client = OpenAI(api_key=key)
+                resp = client.chat.completions.create(
+                    model=model,
+                    max_tokens=16000,
+                    messages=[{"role": "user", "content": prompt}],
+                )
             return parse_sections(resp.choices[0].message.content.strip())
         except Exception as e:
             last_err = e
@@ -755,6 +770,9 @@ with st.sidebar:
     use_gemini = provider.startswith("🆓")
     use_openai = provider.startswith("🧠")
     use_claude = provider.startswith("💎")
+    azure_endpoint = ""
+    azure_deployment = ""
+    azure_api_version = "2024-02-01"
 
     # ── Model variant ──
     st.markdown("### 🔧 Model")
@@ -796,19 +814,34 @@ with st.sidebar:
         api_keys = [key_input] if key_input.strip() else CLAUDE_KEYS
         st.caption("[Get Claude key →](https://console.anthropic.com/)")
 
-    else:  # OpenAI
+    else:  # OpenAI / Azure
         selected_model = st.selectbox(
             "OpenAI model",
             ["gpt-4o-mini", "gpt-4o", "gpt-4.5-preview", "gpt-5.2"],
             format_func=lambda m: MODEL_LABELS.get(m, m),
-            help="4o-mini = cheapest · 4o = best · 4.5 = most powerful"
+            help="4o-mini = cheapest · 4o = best · 4.5/5.2 = most powerful"
         )
         key_input = st.text_input(
-            "OpenAI API Key", type="password", placeholder="Paste your OpenAI key…",
-            help="[Get key →](https://platform.openai.com/api-keys)"
+            "API Key", type="password", placeholder="Paste your OpenAI or Azure key…",
         )
         api_keys = [key_input] if key_input.strip() else OPENAI_KEYS
-        st.caption("[Get OpenAI key →](https://platform.openai.com/api-keys)")
+
+        st.markdown("**Azure OpenAI** *(optional — leave blank for standard OpenAI)*")
+        azure_endpoint = st.text_input(
+            "Azure Endpoint",
+            placeholder="https://YOUR-RESOURCE.openai.azure.com/",
+            help="Found in Azure Portal → your OpenAI resource → Keys and Endpoint"
+        )
+        azure_deployment = st.text_input(
+            "Deployment Name",
+            placeholder="e.g. gpt-4o or gpt-5-2",
+            help="The deployment name you set in Azure AI Studio (may differ from model name)"
+        )
+        azure_api_version = st.text_input(
+            "API Version", value="2024-02-01",
+            help="Azure API version string — default works for most deployments"
+        )
+        st.caption("[Azure AI Studio →](https://ai.azure.com/)")
 
     # ── Subject ──
     st.divider()
@@ -882,7 +915,12 @@ if uploaded:
                 elif use_gemini:
                     sections = call_gemini(raw_text, api_keys, subject, selected_model)
                 elif use_openai:
-                    sections = call_openai(raw_text, api_keys, subject, selected_model)
+                    sections = call_openai(
+                        raw_text, api_keys, subject, selected_model,
+                        azure_endpoint=azure_endpoint if use_openai else "",
+                        azure_deployment=azure_deployment if use_openai else "",
+                        azure_api_version=azure_api_version if use_openai else "2024-02-01",
+                    )
                 else:
                     sections = call_claude(raw_text, api_keys, subject, selected_model)
             except Exception as e:

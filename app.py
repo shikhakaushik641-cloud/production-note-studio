@@ -668,7 +668,7 @@ def call_openai(raw_text: str, api_keys: list, subject: str, model: str,
                 deploy = clean_deployment or model
                 resp = client.chat.completions.create(
                     model=deploy,
-                    max_tokens=16000,
+                    max_completion_tokens=16000,
                     messages=[{"role": "user", "content": prompt}],
                 )
             else:

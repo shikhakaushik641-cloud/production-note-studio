@@ -6,373 +6,454 @@ import io
 import re
 import os
 
-# ── API Keys — loaded from environment variables (sidebar input is the primary method) ──
-GEMINI_KEYS  = [k.strip() for k in os.environ.get("GEMINI_API_KEYS",  "").split(",") if k.strip()]
-CLAUDE_KEYS  = [k.strip() for k in os.environ.get("CLAUDE_API_KEYS",  "").split(",") if k.strip()]
-OPENAI_KEYS  = [k.strip() for k in os.environ.get("OPENAI_API_KEYS",  "").split(",") if k.strip()]
+# ── API Keys — from env vars; sidebar input overrides at runtime ──────────────
+GEMINI_KEYS = [k.strip() for k in os.environ.get("GEMINI_API_KEYS", "").split(",") if k.strip()]
+CLAUDE_KEYS = [k.strip() for k in os.environ.get("CLAUDE_API_KEYS", "").split(",") if k.strip()]
+OPENAI_KEYS = [k.strip() for k in os.environ.get("OPENAI_API_KEYS", "").split(",") if k.strip()]
 
-# ── CSS ──────────────────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════════
+#  CSS  —  Modern Scientific Design System
+# ═══════════════════════════════════════════════════════════════════════════════
 CSS = """
-@import url('https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&family=Patrick+Hand&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Lora:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
 
+/* ── Design Tokens ── */
 :root {
-    --ink:        #1c1c2e;
-    --accent:     #e74c3c;
-    --blue:       #1a6fc4;
-    --green:      #1e8449;
-    --orange:     #d35400;
-    --purple:     #6c3483;
-    --teal:       #0e7c7b;
-    --pink:       #c0392b;
-    --paper:      #fffdf4;
-    --paper2:     #f5f0e8;
-    --rule:       #c8c0b0;
-    --margin:     #f4b9b2;
-    --shadow:     rgba(0,0,0,0.10);
+    /* Scientific palette */
+    --indigo:       #1a237e;
+    --indigo-mid:   #283593;
+    --indigo-lite:  #e8eaf6;
+    --blue:         #0d47a1;
+    --blue-mid:     #1565c0;
+    --blue-lite:    #e3f2fd;
+    --emerald:      #2e7d32;
+    --emerald-lite: #e8f5e9;
+    --amber:        #ff8f00;
+    --amber-lite:   #fff8e1;
+    --amethyst:     #6a1b9a;
+    --amethyst-lite:#f3e5f5;
+    --teal:         #00695c;
+    --teal-lite:    #e0f2f1;
+    --rose:         #c62828;
+    --rose-lite:    #ffebee;
+    /* Neutrals */
+    --ink:          #1a1a2e;
+    --ink-muted:    #455a64;
+    --surface:      #ffffff;
+    --canvas:       #f8f9fc;
+    --canvas2:      #f0f2f8;
+    --border:       #dde3ef;
+    --rule:         #e8eaf0;
+    /* Shadows */
+    --shadow-sm:    0 1px 3px rgba(26,35,126,0.08), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md:    0 4px 6px rgba(26,35,126,0.07), 0 2px 4px rgba(0,0,0,0.06);
+    --shadow-lg:    0 10px 25px rgba(26,35,126,0.10), 0 4px 10px rgba(0,0,0,0.06);
+    /* Typography */
+    --fn:           'Inter', system-ui, -apple-system, sans-serif;
+    --fn-serif:     'Lora', Georgia, serif;
+    --fn-mono:      'JetBrains Mono', 'Fira Code', Consolas, monospace;
+    --radius:       12px;
+    --radius-sm:    8px;
 }
 
-*, *::before, *::after { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
 
 body, .stMarkdown, .stTabs [data-baseweb="tab-panel"] {
-    background: var(--paper);
-    font-family: 'Kalam', 'Comic Sans MS', 'Chalkboard SE', cursive;
-    font-size: 17px;
-    line-height: 2.0;
+    background: var(--canvas);
+    font-family: var(--fn);
+    font-size: 16px;
+    line-height: 1.75;
     color: var(--ink);
+    -webkit-font-smoothing: antialiased;
 }
 
-/* ── Notebook page ── */
+/* ── Note Canvas ── */
 .note-paper {
-    position: relative;
-    background: var(--paper);
-    border-radius: 6px;
-    padding: 2.5rem 3rem 2.5rem 4.5rem;
-    box-shadow: 3px 4px 18px var(--shadow), -1px 0 6px rgba(0,0,0,0.04);
-    background-image:
-        linear-gradient(90deg, var(--margin) 56px, transparent 56px),
-        repeating-linear-gradient(
-            transparent, transparent 31px,
-            var(--rule) 31px, var(--rule) 32px
-        );
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 2.5rem 3rem;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid var(--border);
     min-height: 500px;
+    position: relative;
 }
-
-/* Red margin line gutter ring holes */
 .note-paper::before {
-    content: "◉\A◉\A◉";
-    white-space: pre;
+    content: '';
     position: absolute;
-    left: 14px; top: 60px;
-    font-size: 18px;
-    color: #bbb;
-    line-height: 120px;
+    top: 0; left: 0; right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, var(--indigo), var(--blue-mid), var(--teal));
+    border-radius: var(--radius) var(--radius) 0 0;
 }
 
 /* ── Headings ── */
 h1 {
-    font-family: 'Patrick Hand', 'Kalam', cursive;
-    color: var(--accent);
+    font-family: var(--fn);
+    font-weight: 800;
+    font-size: 1.9rem;
+    color: var(--indigo);
     text-align: center;
-    font-size: 2rem;
-    border-bottom: 3px double var(--accent);
-    padding-bottom: 8px;
-    margin-bottom: 1.2rem;
-    letter-spacing: 1px;
-    text-shadow: 1px 1px 0 #ffd6d6;
+    padding: 1.2rem 1.5rem;
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--indigo-lite) 0%, #dce8fd 100%);
+    border-radius: var(--radius);
+    border-left: 5px solid var(--indigo);
+    box-shadow: var(--shadow-sm);
 }
 h2 {
+    font-weight: 700;
+    font-size: 1.25rem;
     color: var(--blue);
-    font-size: 1.35rem;
-    border-bottom: 2.5px solid var(--blue);
-    padding-bottom: 3px;
-    margin-top: 1.8rem;
+    margin-top: 2rem;
+    margin-bottom: 0.6rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 2px solid var(--blue-lite);
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    letter-spacing: -0.01em;
+}
+h2::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 1.1em;
+    background: linear-gradient(to bottom, var(--blue), var(--teal));
+    border-radius: 2px;
+    flex-shrink: 0;
 }
 h3 {
-    color: var(--green);
-    font-size: 1.1rem;
-    margin-top: 1rem;
-    text-decoration: underline;
-    text-decoration-style: wavy;
-    text-decoration-color: var(--green);
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: var(--emerald);
+    margin-top: 1.2rem;
+    margin-bottom: 0.4rem;
+    padding-left: 0.6rem;
+    border-left: 3px solid var(--emerald);
 }
 
-/* ── Inline two-column layout ── */
-.two-col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin: 14px 0;
-}
-.three-col {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 14px;
-    margin: 14px 0;
+/* ── Chapter Map (pre block) ── */
+pre {
+    background: linear-gradient(135deg, var(--indigo-lite) 0%, #dce8fd 100%);
+    border: 1px solid #c5cae9;
+    border-left: 4px solid var(--indigo);
+    border-radius: var(--radius-sm);
+    padding: 1.25rem 1.5rem;
+    font-family: var(--fn-mono);
+    font-size: 0.88rem;
+    overflow-x: auto;
+    line-height: 1.8;
+    color: var(--indigo);
+    box-shadow: var(--shadow-sm);
 }
 
-/* ── Callout boxes ── */
-.highlight-box {
-    background: linear-gradient(135deg, #fef9e7 80%, #fdebd0);
-    border-left: 6px solid #f39c12;
-    border-radius: 0 10px 10px 0;
-    padding: 12px 16px;
-    margin: 14px 0;
-    box-shadow: 2px 2px 6px rgba(243,156,18,0.15);
+/* ── Cards — Callout Boxes ── */
+.highlight-box,
+.activity-box,
+.case-study-box,
+.exam-box,
+.memory-box,
+.pause-ponder,
+.threads-curiosity {
+    border-radius: var(--radius-sm);
+    padding: 1rem 1.2rem 1rem 1.5rem;
+    margin: 1.1rem 0;
+    box-shadow: var(--shadow-md);
     position: relative;
+    border: 1px solid transparent;
+}
+
+/* Header label inside each card */
+.highlight-box::before,
+.activity-box::before,
+.case-study-box::before,
+.exam-box::before,
+.memory-box::before,
+.pause-ponder::before,
+.threads-curiosity::before {
+    font-family: var(--fn);
+    font-weight: 700;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.35rem;
+    border-bottom: 1px solid rgba(0,0,0,0.08);
+}
+
+/* Key Concept — Amber */
+.highlight-box {
+    background: linear-gradient(135deg, var(--amber-lite) 70%, #fff3cd);
+    border-left: 5px solid var(--amber);
+    border-color: #ffe082;
 }
 .highlight-box::before {
-    content: "✏️ Key Concept";
-    font-weight: 700;
-    display: block;
-    margin-bottom: 5px;
-    color: #b7770d;
-    font-size: 0.85rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    content: "✏️  KEY CONCEPT";
+    color: #e65100;
 }
 
+/* Activity / Experiment — Emerald */
 .activity-box {
-    background: linear-gradient(135deg, #eafaf1 80%, #d5f5e3);
-    border-left: 6px solid var(--green);
-    border-radius: 0 10px 10px 0;
-    padding: 12px 16px;
-    margin: 14px 0;
-    box-shadow: 2px 2px 6px rgba(30,132,73,0.12);
+    background: linear-gradient(135deg, var(--emerald-lite) 70%, #dcedc8);
+    border-left: 5px solid var(--emerald);
+    border-color: #a5d6a7;
 }
 .activity-box::before {
-    content: "🧪 Activity / Experiment";
-    font-weight: 700;
-    display: block;
-    margin-bottom: 5px;
-    color: var(--green);
-    font-size: 0.85rem;
-    text-transform: uppercase;
+    content: "🔬  EXPERIMENT / ACTIVITY";
+    color: var(--emerald);
 }
 
+/* Real-World Case — Blue */
 .case-study-box {
-    background: linear-gradient(135deg, #eaf4fb 80%, #d6eaf8);
-    border-left: 6px solid var(--blue);
-    border-radius: 0 10px 10px 0;
-    padding: 12px 16px;
-    margin: 14px 0;
-    box-shadow: 2px 2px 6px rgba(26,111,196,0.12);
+    background: linear-gradient(135deg, var(--blue-lite) 70%, #dce8fd);
+    border-left: 5px solid var(--blue-mid);
+    border-color: #90caf9;
 }
 .case-study-box::before {
-    content: "🌍 Real-World Application";
-    font-weight: 700;
-    display: block;
-    margin-bottom: 5px;
+    content: "🌍  REAL-WORLD APPLICATION";
     color: var(--blue);
-    font-size: 0.85rem;
-    text-transform: uppercase;
 }
 
+/* Exam Corner — Amethyst */
 .exam-box {
-    background: linear-gradient(135deg, #fdf2f8 80%, #f9ebf7);
-    border: 2px dashed #8e44ad;
-    border-radius: 10px;
-    padding: 12px 16px;
-    margin: 14px 0;
+    background: linear-gradient(135deg, var(--amethyst-lite) 70%, #ede0f8);
+    border-left: 5px solid var(--amethyst);
+    border-color: #ce93d8;
 }
 .exam-box::before {
-    content: "🎯 Exam Tip";
-    font-weight: 700;
-    display: block;
-    margin-bottom: 5px;
-    color: var(--purple);
-    font-size: 0.85rem;
-    text-transform: uppercase;
+    content: "🎯  EXAM CORNER";
+    color: var(--amethyst);
 }
 
+/* Memory Trick — Teal */
 .memory-box {
-    background: linear-gradient(135deg, #e8f8f5 80%, #d1f2eb);
-    border: 2px solid var(--teal);
-    border-radius: 10px;
-    padding: 12px 16px;
-    margin: 14px 0;
-    font-style: italic;
+    background: linear-gradient(135deg, var(--teal-lite) 70%, #b2dfdb);
+    border-left: 5px solid var(--teal);
+    border-color: #80cbc4;
+    font-style: normal;
 }
 .memory-box::before {
-    content: "🧠 Memory Trick";
-    font-weight: 700;
-    font-style: normal;
-    display: block;
-    margin-bottom: 5px;
+    content: "🧠  MEMORY TRICK";
     color: var(--teal);
-    font-size: 0.85rem;
-    text-transform: uppercase;
 }
 
-/* ── Image placeholder ── */
+/* 🔍 Pause & Ponder — magnifying glass theme */
+.pause-ponder {
+    background: linear-gradient(135deg, #fce4ec 70%, #f8bbd9);
+    border-left: 5px solid var(--rose);
+    border-color: #ef9a9a;
+}
+.pause-ponder::before {
+    content: "🔍  PAUSE & PONDER";
+    color: var(--rose);
+}
+
+/* 🧭 Threads of Curiosity — compass theme */
+.threads-curiosity {
+    background: linear-gradient(135deg, var(--amethyst-lite) 60%, #e8eaf6);
+    border-left: 5px solid var(--amethyst);
+    border: 2px dashed #ce93d8;
+    border-left: 5px solid var(--amethyst);
+}
+.threads-curiosity::before {
+    content: "🧭  THREADS OF CURIOSITY";
+    color: var(--amethyst);
+}
+
+/* ── Image Placeholder ── */
 .img-placeholder {
-    border: 3px dashed #aaa;
-    border-radius: 10px;
-    background: #f9f9f9;
-    min-height: 160px;
+    background: linear-gradient(135deg, var(--canvas2) 0%, #e8eaf6 100%);
+    border: 2px dashed #9fa8da;
+    border-radius: var(--radius);
+    min-height: 180px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    color: #999;
-    font-size: 0.9rem;
+    gap: 10px;
+    margin: 1.1rem 0;
+    padding: 1.5rem;
     text-align: center;
-    padding: 16px;
-    margin: 14px 0;
-    gap: 8px;
+    color: var(--indigo-mid);
+    font-size: 0.88rem;
+    font-weight: 500;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    overflow: hidden;
 }
 .img-placeholder::before {
-    content: "🖼️";
-    font-size: 2.5rem;
+    content: "🖼";
+    font-size: 2.8rem;
+    opacity: 0.6;
+}
+.img-placeholder::after {
+    content: 'Scientific Illustration';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: linear-gradient(90deg, var(--indigo), var(--blue-mid));
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    text-align: center;
 }
 
-/* ── Sticky note ── */
+/* ── Sticky Note ── */
 .sticky {
-    background: #fff9c4;
-    border-radius: 4px 4px 4px 20px;
-    padding: 12px 16px;
-    margin: 14px 0;
-    box-shadow: 3px 4px 10px rgba(0,0,0,0.15), inset 0 -2px 4px rgba(0,0,0,0.05);
-    transform: rotate(-1deg);
+    background: linear-gradient(135deg, #fff9c4 80%, #fff176);
+    border-radius: 4px 4px 20px 4px;
+    padding: 0.85rem 1.1rem;
+    margin: 1rem 0;
+    box-shadow: 3px 4px 12px rgba(0,0,0,0.12), inset 0 -2px 4px rgba(0,0,0,0.04);
+    transform: rotate(-0.6deg);
     display: inline-block;
-    min-width: 180px;
-    font-size: 0.95rem;
+    min-width: 200px;
+    font-size: 0.93rem;
+    font-weight: 500;
+    color: #5d4037;
+    border-top: 3px solid #fdd835;
+}
+
+/* ── Formula Block ── */
+.formula-block {
+    background: linear-gradient(135deg, #ede7f6 70%, #d1c4e9);
+    border: 1.5px solid #b39ddb;
+    border-left: 5px solid var(--amethyst);
+    border-radius: var(--radius-sm);
+    padding: 1.2rem 1.5rem;
+    margin: 1.1rem 0;
+    text-align: center;
+    font-family: var(--fn-serif);
+    font-size: 1.1rem;
+    box-shadow: var(--shadow-md);
+    overflow-x: auto;
+}
+.formula-block::before {
+    content: "∑  FORMULA";
+    display: block;
+    font-family: var(--fn);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--amethyst);
+    margin-bottom: 0.5rem;
+}
+
+/* ── Grid Layouts ── */
+.two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 1rem 0;
+}
+.three-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.85rem;
+    margin: 1rem 0;
+}
+.two-col > div,
+.three-col > div {
+    background: var(--canvas);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.85rem 1rem;
+    font-size: 0.93rem;
 }
 
 /* ── Tables ── */
 table {
     width: 100%;
-    border-collapse: collapse;
-    margin: 16px 0;
-    font-size: 0.95rem;
-    border-radius: 8px;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 1.2rem 0;
+    font-size: 0.92rem;
+    border-radius: var(--radius-sm);
     overflow: hidden;
-    box-shadow: 0 2px 8px var(--shadow);
+    box-shadow: var(--shadow-md);
+    border: 1px solid var(--border);
 }
 th {
-    background: var(--blue);
+    background: linear-gradient(135deg, var(--indigo) 0%, var(--blue-mid) 100%);
     color: white;
-    padding: 10px 14px;
+    padding: 11px 16px;
     text-align: left;
-    font-family: 'Patrick Hand', cursive;
+    font-weight: 600;
+    font-size: 0.85rem;
+    letter-spacing: 0.03em;
+    position: sticky;
+    top: 0;
 }
 td {
-    padding: 8px 14px;
+    padding: 9px 16px;
     border-bottom: 1px solid var(--rule);
-    background: var(--paper2);
+    background: var(--surface);
+    vertical-align: top;
 }
-tr:nth-child(even) td { background: var(--paper); }
+tr:nth-child(even) td { background: var(--canvas); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--blue-lite); transition: background 0.15s; }
 
-/* ── Bullet list ── */
-ul.bullet-list { padding-left: 1.2rem; margin: 8px 0; }
-ul.bullet-list li {
-    margin-bottom: 6px;
+/* ── Bullet List ── */
+ul.bullet-list {
+    padding-left: 0.5rem;
+    margin: 0.6rem 0;
     list-style: none;
-    padding-left: 1.4rem;
-    position: relative;
 }
+ul.bullet-list li {
+    padding: 0.3rem 0 0.3rem 1.6rem;
+    position: relative;
+    border-bottom: 1px solid var(--rule);
+    font-size: 0.95rem;
+}
+ul.bullet-list li:last-child { border-bottom: none; }
 ul.bullet-list li::before {
-    content: "✦";
+    content: "◆";
     position: absolute;
     left: 0;
-    color: var(--blue);
-    font-size: 0.85rem;
-    top: 2px;
+    color: var(--blue-mid);
+    font-size: 0.65rem;
+    top: 0.55rem;
 }
 
-/* ── pre / flowchart ── */
-pre {
-    background: var(--paper2);
-    border: 1.5px solid var(--rule);
-    border-radius: 8px;
-    padding: 14px 18px;
-    font-family: 'Kalam', monospace;
-    font-size: 0.95rem;
-    overflow-x: auto;
-    line-height: 1.7;
-}
-
-/* ── Formula box ── */
-.formula-block {
-    background: linear-gradient(135deg, #f4f0ff 80%, #e8daff);
-    border: 2px dashed var(--purple);
-    border-radius: 10px;
-    padding: 16px 20px;
-    margin: 14px 0;
-    text-align: center;
-    font-size: 1.1rem;
-    box-shadow: 2px 2px 8px rgba(108,52,131,0.10);
-    overflow-x: auto;
-}
-
-/* ── Mobile responsive ── */
+/* ── Mobile Responsive ── */
 @media (max-width: 768px) {
-    body, .stMarkdown, .stTabs [data-baseweb="tab-panel"] {
-        font-size: 15px;
-        line-height: 1.8;
-    }
-
-    .note-paper {
-        padding: 1.2rem 1rem 1.2rem 1.2rem;
-        background-image: repeating-linear-gradient(
-            transparent, transparent 31px,
-            var(--rule) 31px, var(--rule) 32px
-        );
-    }
-
-    /* Hide ring holes on mobile — too cramped */
-    .note-paper::before { display: none; }
-
-    h1 { font-size: 1.4rem; }
+    .note-paper { padding: 1.5rem 1.2rem; }
+    h1 { font-size: 1.4rem; padding: 1rem; }
     h2 { font-size: 1.1rem; }
     h3 { font-size: 1rem; }
-
-    /* Stack columns on mobile */
-    .two-col, .three-col {
-        grid-template-columns: 1fr;
-        gap: 10px;
-    }
-
-    .sticky {
-        display: block;
-        transform: none;
-        min-width: unset;
-        width: 100%;
-    }
-
-    table { font-size: 0.85rem; }
-    th, td { padding: 6px 8px; }
-
-    pre {
-        font-size: 0.82rem;
-        padding: 10px 12px;
-    }
-
-    .formula-block { font-size: 0.95rem; padding: 12px 10px; }
-
+    .two-col, .three-col { grid-template-columns: 1fr; gap: 0.75rem; }
+    .sticky { transform: none; display: block; min-width: unset; width: 100%; }
+    table { font-size: 0.82rem; }
+    th, td { padding: 7px 10px; }
+    pre { font-size: 0.8rem; padding: 1rem; }
+    .formula-block { font-size: 0.95rem; padding: 1rem; }
     .highlight-box, .activity-box, .case-study-box,
-    .exam-box, .memory-box { padding: 10px 12px; }
-
-    .img-placeholder { min-height: 120px; font-size: 0.82rem; }
+    .exam-box, .memory-box, .pause-ponder, .threads-curiosity { padding: 0.85rem 1rem; }
+    .img-placeholder { min-height: 130px; }
 }
-
 @media (max-width: 480px) {
-    body, .stMarkdown { font-size: 14px; }
+    body { font-size: 14px; }
+    .note-paper { padding: 1rem 0.85rem; }
     h1 { font-size: 1.2rem; }
-    .note-paper { padding: 1rem 0.8rem; }
 }
 """
 
+# ── HTML wrapper for exported ZIP files ──────────────────────────────────────
 HTML_WRAPPER = """<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{title}</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Lora:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -386,15 +467,12 @@ HTML_WRAPPER = """<!DOCTYPE html>
 </body>
 </html>"""
 
-# ── Extraction helpers ────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════════
+#  EXTRACTION HELPERS
+# ═══════════════════════════════════════════════════════════════════════════════
 def extract_pdf(buf: io.BytesIO) -> str:
     reader = pypdf.PdfReader(buf)
-    pages = []
-    for page in reader.pages:
-        t = page.extract_text()
-        if t:
-            pages.append(t)
-    return "\n\n".join(pages)
+    return "\n\n".join(p.extract_text() for p in reader.pages if p.extract_text())
 
 
 def extract_pptx(buf: io.BytesIO) -> str:
@@ -409,32 +487,26 @@ def extract_pptx(buf: io.BytesIO) -> str:
     return "\n\n".join(slides)
 
 
-# ── Markdown remnant sanitiser ────────────────────────────────────────────────
 def sanitise(html: str) -> str:
-    """Convert stray Markdown into safe HTML tags."""
-    # **bold** → <b>
     html = re.sub(r"\*\*(.+?)\*\*", r"<b>\1</b>", html)
-    # *italic* → <em>
     html = re.sub(r"\*(.+?)\*", r"<em>\1</em>", html)
-    # Leading dash list items → <li>  (only bare lines, not inside existing tags)
     html = re.sub(r"(?m)^[ \t]*[-•]\s+(.+)$", r"<li>\1</li>", html)
-    # Wrap consecutive <li> runs in a <ul class="bullet-list">
-    html = re.sub(r"(<li>.*?</li>)(\s*<li>)", r"\1\2", html, flags=re.S)
     html = re.sub(r"((?:<li>.*?</li>\s*)+)", r'<ul class="bullet-list">\1</ul>', html, flags=re.S)
-    # Remove accidental triple-backtick fences
     html = re.sub(r"```[a-z]*\n?", "", html)
     return html
 
 
-# ── Shared prompt builder ─────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════════
+#  PROMPT BUILDER
+# ═══════════════════════════════════════════════════════════════════════════════
 def build_prompt(raw_text: str, subject: str) -> str:
     return f"""You are an expert Science educator, NCERT content analyst, and topper-level student note-maker for subject "{subject}".
 
-Your task is to convert the provided chapter into premium handwritten-style short notes exactly like the revision notebook of a rank-holding student.
+Convert the provided chapter into premium structured notes for a modern digital notebook with a scientific aesthetic.
 
 OUTPUT RULES — follow exactly:
-1. Return ONLY raw HTML. No markdown code fences (no ```html). No preamble or trailing commentary.
-2. Divide your output using exactly these three HTML div markers (each on its own line):
+1. Return ONLY raw HTML. No markdown code fences. No preamble or commentary.
+2. Use exactly these three section wrappers:
    <div id="visual-notes">   ... </div>
    <div id="summary-page">   ... </div>
    <div id="formula-matrix"> ... </div>
@@ -442,88 +514,56 @@ OUTPUT RULES — follow exactly:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SECTION 1 — <div id="visual-notes">
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Generate PREMIUM HANDWRITTEN TOPPER NOTES for the ENTIRE chapter.
+Generate COMPLETE TOPPER NOTES covering EVERY topic.
 
-⚠️ STRICT COVERAGE RULE — THIS IS MANDATORY:
-• Go through the source material LINE BY LINE.
-• Every heading, subheading, paragraph, example, activity, box, table, and figure caption MUST appear in the notes.
-• Do NOT summarise multiple topics into one sentence. Each topic gets its OWN section.
-• Do NOT write "and more..." or "etc." — spell out every item explicitly.
-• Do NOT skip any topic even if it seems minor — completeness is the #1 priority.
-• If the source has 10 topics, your notes must have 10 sections. If it has 20, write 20.
-• Write MORE, not less. Long detailed notes are correct. Short summaries are wrong.
+⚠️ MANDATORY COVERAGE:
+• Go through source material LINE BY LINE — nothing skipped.
+• Every heading, subheading, example, activity, table, figure caption MUST appear.
+• Write MORE not less. Completeness is #1 priority.
 
-Structure to follow INSIDE this div:
-
-A) CHAPTER MAP (tree format using <pre> tags):
-   CHAPTER NAME
+A) CHAPTER MAP — use <pre> tags with tree structure:
+   CHAPTER TITLE
    │
-   ├── Topic 1
-   ├── Topic 2
-   └── Topic N
+   ├── 1. Topic One
+   │    ├── 1.1 Subtopic
+   │    └── 1.2 Subtopic
+   └── N. Topic N
 
-B) TOPIC-WISE NOTES — for every topic and subtopic:
-   • Use <h2> for main topics, <h3> for subtopics
-   • Wrap key definitions/laws in:        <div class="highlight-box">
-   • Wrap activities/experiments in:      <div class="activity-box">
-   • Wrap real-world applications in:     <div class="case-study-box">
-   • Wrap exam tips in:                   <div class="exam-box">
-   • Wrap memory tricks/mnemonics in:     <div class="memory-box">
-   • Use bullet points (<ul class="bullet-list"><li>) for concise revision points
-   • Add emoji markers inline:
-       ⭐ Important  🔥 Very Important  ⚠️ Common Mistake
-       🎯 Exam Point  📝 Remember  💡 Shortcut  🧠 Memory Trick
+B) TOPIC-WISE NOTES for every topic:
+   • <h2> for main topics · <h3> for subtopics
+   • Key definitions/laws       → <div class="highlight-box">
+   • Activities/experiments     → <div class="activity-box">
+   • Real-world applications    → <div class="case-study-box">
+   • Exam tips                  → <div class="exam-box">
+   • Memory tricks/mnemonics    → <div class="memory-box">
+   • Evidence/observation Qs    → <div class="pause-ponder">
+   • "Threads of Curiosity"     → <div class="threads-curiosity">
+   • Bullet points              → <ul class="bullet-list"><li>
+   • Inline emoji: ⭐ Important  🔥 Very Important  ⚠️ Common Mistake  🎯 Exam  📝 Remember  💡 Tip
 
-   INLINE LAYOUT — use two-column and three-column grids often:
-   • Side-by-side comparisons:  <div class="two-col"><div>...</div><div>...</div></div>
-   • Three quick facts:         <div class="three-col"><div>...</div>...</div>
-   • Sticky notes for tips:     <div class="sticky">short tip text</div>
+   LAYOUTS:
+   • Comparisons: <div class="two-col"><div>...</div><div>...</div></div>
+   • Quick facts: <div class="three-col"><div>...</div>...</div>
+   • Tips:        <div class="sticky">short tip</div>
+   • Diagrams:    <div class="img-placeholder">Diagram: [describe it precisely]</div>
 
-   IMAGE PLACEHOLDERS — add a placeholder wherever a diagram/figure would help:
-   <div class="img-placeholder">Diagram: [describe what the diagram shows, e.g. "Life cycle of a cell"]</div>
-   Place these inline within the relevant topic section.
-
-   For each topic include: Definition · Key idea · Real-life example · Exam relevance · Common misconception
-
-C) SCIENTIFIC TERMS — wrap in a highlight-box:
-   Term → Meaning  (one per line)
-
-D) IMPORTANT EXAMPLES — for each example:
-   🎯 Example N — Situation | Variables | Scientific Learning
-
-E) ACTIVITIES & EXPERIMENTS — for each activity:
-   🧪 Activity — Aim | Observation | Conclusion | Exam Question
-
-F) SCIENCE THINKING BOXES (if applicable) — separate highlight-boxes for:
-   🔍 Scientific Method · Modelling · Prediction · Estimation · Evidence · Limitations
-
-G) SPECIAL FEATURES — convert "Meet a Scientist", "Threads of Curiosity", "Pause and Ponder" into:
-   💡 Beyond NCERT  boxes using case-study-box class
-
-H) MEMORY TOOLS — at the end:
-   🧠 Mnemonics | Recall Tricks | One-line Memory Keys | Last Minute Tips
-
-Use <pre> blocks for tree/flowchart structures. Use <table> for comparison tables.
+C) SCIENTIFIC TERMS — in a highlight-box, one per line: Term → Meaning
+D) EXAMPLES — 🎯 Example N — Situation | Variables | Learning
+E) ACTIVITIES — 🧪 Activity — Aim | Observation | Conclusion | Exam Q
+F) MEMORY TOOLS — mnemonics, recall tricks, last-minute tips
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SECTION 2 — <div id="summary-page">
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ONE-PAGE REVISION SHEET. Include ALL of the following:
-• All definitions  • All laws & principles  • All theories
-• All symbols      • All important examples  • All scientific skills
-• Common mistakes  • 10 Most Important Exam Points
-
-Use <h2> for each category. Use <ul class="bullet-list"><li> for all points.
+ONE-PAGE REVISION SHEET — ALL definitions, laws, examples, common mistakes, 10 exam points.
+Use <h2> for categories and <ul class="bullet-list"><li> for all items.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SECTION 3 — <div id="formula-matrix">
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-For every formula/equation/constant/unit:
-   Wrap in: <div class="formula-block">
-   Include: Formula (LaTeX inside $$ ... $$) · Symbol meanings · Units · Conditions · Exam Tip
-
-If the chapter has NO mathematical formulas, create a "📌 Important Relationships" section instead,
-listing conceptual relationships in the same formula-block style.
+Every formula/equation/constant → <div class="formula-block">
+Include: LaTeX formula ($$...$$) · symbol meanings · units · conditions · exam tip.
+If no formulas, make "📌 Important Relationships" section using formula-block style.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 SOURCE MATERIAL (subject: {subject}):
@@ -532,28 +572,28 @@ SOURCE MATERIAL (subject: {subject}):
 """
 
 
-# ── Slice helper (shared) ─────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════════
+#  SECTION PARSER
+# ═══════════════════════════════════════════════════════════════════════════════
 def slice_div(div_id: str, source: str) -> str:
     open_tag = f'<div id="{div_id}">'
     start = source.find(open_tag)
     if start == -1:
         return f"<p><em>Section '{div_id}' not found. Try re-processing.</em></p>"
     start += len(open_tag)
-    depth = 1
-    i = start
+    depth, i = 1, start
     while i < len(source) and depth > 0:
-        open_pos = source.find("<div", i)
-        close_pos = source.find("</div>", i)
-        if close_pos == -1:
+        op = source.find("<div", i)
+        cl = source.find("</div>", i)
+        if cl == -1:
             break
-        if open_pos != -1 and open_pos < close_pos:
-            depth += 1
-            i = open_pos + 4
+        if op != -1 and op < cl:
+            depth += 1; i = op + 4
         else:
             depth -= 1
             if depth == 0:
-                return sanitise(source[start:close_pos].strip())
-            i = close_pos + 6
+                return sanitise(source[start:cl].strip())
+            i = cl + 6
     return sanitise(source[start:].strip())
 
 
@@ -565,65 +605,96 @@ def parse_sections(raw: str) -> dict:
     }
 
 
-# ── Claude call ───────────────────────────────────────────────────────────────
-def call_claude(raw_text: str, api_keys: list, subject: str) -> dict:
+# ═══════════════════════════════════════════════════════════════════════════════
+#  API CALLS
+# ═══════════════════════════════════════════════════════════════════════════════
+# Model name map for display
+MODEL_LABELS = {
+    "claude-haiku-4-5-20251001": "Claude Haiku 4.5",
+    "claude-sonnet-4-6":         "Claude Sonnet 4.6",
+    "claude-opus-4-8":           "Claude Opus 4.8",
+    "gemini-2.0-flash-lite":     "Gemini 2.0 Flash Lite",
+    "gemini-1.5-flash":          "Gemini 1.5 Flash",
+    "gemini-2.0-flash":          "Gemini 2.0 Flash",
+    "gpt-4o-mini":               "GPT-4o Mini",
+    "gpt-4o":                    "GPT-4o",
+    "gpt-4.5-preview":           "GPT-4.5",
+}
+
+
+def call_claude(raw_text: str, api_keys: list, subject: str, model: str) -> dict:
     prompt = build_prompt(raw_text, subject)
     try:
         import anthropic
     except ImportError:
-        st.error("Install the Anthropic SDK:  pip install anthropic")
+        st.error("Run: `pip install anthropic`")
         st.stop()
     last_err = None
-    raw = None
     for key in api_keys:
         try:
             client = anthropic.Anthropic(api_key=key)
-            response = client.messages.create(
-                model="claude-haiku-4-5-20251001",
+            resp = client.messages.create(
+                model=model,
                 max_tokens=16000,
                 messages=[{"role": "user", "content": prompt}],
             )
-            raw = response.content[0].text.strip()
-            break
+            return parse_sections(resp.content[0].text.strip())
         except Exception as e:
             last_err = e
-    if raw is None:
-        raise last_err
-    return parse_sections(raw)
+    raise last_err
 
 
-# ── OpenAI call ───────────────────────────────────────────────────────────────
-def call_openai(raw_text: str, api_keys: list, subject: str) -> dict:
+def call_openai(raw_text: str, api_keys: list, subject: str, model: str) -> dict:
     prompt = build_prompt(raw_text, subject)
     try:
         from openai import OpenAI
     except ImportError:
-        st.error("Install the OpenAI SDK:  pip install openai")
+        st.error("Run: `pip install openai`")
         st.stop()
     last_err = None
-    raw = None
     for key in api_keys:
         try:
             client = OpenAI(api_key=key)
-            response = client.chat.completions.create(
-                model="gpt-4.5-preview",
+            resp = client.chat.completions.create(
+                model=model,
                 max_tokens=16000,
                 messages=[{"role": "user", "content": prompt}],
             )
-            raw = response.choices[0].message.content.strip()
-            break
+            return parse_sections(resp.choices[0].message.content.strip())
         except Exception as e:
             last_err = e
-    if raw is None:
-        raise last_err
-    return parse_sections(raw)
+    raise last_err
 
 
-# ── Ollama call (no API key needed) ──────────────────────────────────────────
+def call_gemini(raw_text: str, api_keys: list, subject: str, model: str) -> dict:
+    prompt = build_prompt(raw_text, subject)
+    last_err = None
+    for key in api_keys:
+        try:
+            try:
+                from google import genai as _g
+                from google.genai import types as gt
+                client = _g.Client(api_key=key)
+                cfg = gt.GenerateContentConfig(max_output_tokens=16000)
+                resp = client.models.generate_content(model=model, contents=prompt, config=cfg)
+            except ImportError:
+                import google.generativeai as genai_legacy
+                genai_legacy.configure(api_key=key)
+                resp = genai_legacy.GenerativeModel(model).generate_content(
+                    prompt, generation_config={"max_output_tokens": 16000})
+            return parse_sections(resp.text.strip())
+        except Exception as e:
+            last_err = e
+    raise last_err
+
+
 def call_ollama(raw_text: str, model: str, subject: str) -> dict:
     import urllib.request, json
     prompt = build_prompt(raw_text, subject)
-    payload = json.dumps({"model": model, "prompt": prompt, "stream": False, "options": {"num_predict": 6000, "num_ctx": 16384}}).encode()
+    payload = json.dumps({
+        "model": model, "prompt": prompt, "stream": False,
+        "options": {"num_predict": 6000, "num_ctx": 16384}
+    }).encode()
     req = urllib.request.Request(
         "http://localhost:11434/api/generate",
         data=payload,
@@ -634,53 +705,20 @@ def call_ollama(raw_text: str, model: str, subject: str) -> dict:
             raw = json.loads(resp.read())["response"].strip()
     except Exception as e:
         raise RuntimeError(
-            f"Ollama error: {e}. Make sure Ollama is running (`ollama serve`) "
+            f"Ollama error: {e}. Ensure Ollama is running (`ollama serve`) "
             f"and model '{model}' is pulled (`ollama pull {model}`)."
         )
     return parse_sections(raw)
 
 
-# ── Gemini call ───────────────────────────────────────────────────────────────
-def call_gemini(raw_text: str, api_keys: list, subject: str) -> dict:
-    prompt = build_prompt(raw_text, subject)
-    last_err = None
-    raw = None
-    for key in api_keys:
-        try:
-            try:
-                from google import genai as _g
-                client = _g.Client(api_key=key)
-                try:
-                    from google.genai import types as gt
-                    cfg = gt.GenerateContentConfig(max_output_tokens=16000)
-                    resp = client.models.generate_content(
-                        model="gemini-2.0-flash-lite", contents=prompt, config=cfg)
-                except Exception:
-                    resp = client.models.generate_content(
-                        model="gemini-2.0-flash-lite", contents=prompt)
-                raw = resp.text.strip()
-            except ImportError:
-                import google.generativeai as genai_legacy
-                genai_legacy.configure(api_key=key)
-                resp = genai_legacy.GenerativeModel("gemini-2.0-flash-lite").generate_content(
-                    prompt, generation_config={"max_output_tokens": 16000})
-                raw = resp.text.strip()
-            break
-        except Exception as e:
-            last_err = e
-    if raw is None:
-        raise last_err
-    return parse_sections(raw)
-
-
-# ── ZIP builder ───────────────────────────────────────────────────────────────
+# ── ZIP builder ────────────────────────────────────────────────────────────────
 def build_zip(data: dict, base_name: str) -> io.BytesIO:
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr("style.css", CSS)
-        zf.writestr("index.html",    HTML_WRAPPER.format(title="Detailed Notes",    body=data["notes"]))
-        zf.writestr("summary.html",  HTML_WRAPPER.format(title="Quick Highlights",  body=data["bullets"]))
-        zf.writestr("formulas.html", HTML_WRAPPER.format(title="Formula Sheet",     body=data["formulas"]))
+        zf.writestr("style.css",      CSS)
+        zf.writestr("index.html",     HTML_WRAPPER.format(title="Detailed Notes",   body=data["notes"]))
+        zf.writestr("summary.html",   HTML_WRAPPER.format(title="Quick Highlights", body=data["bullets"]))
+        zf.writestr("formulas.html",  HTML_WRAPPER.format(title="Formula Sheet",    body=data["formulas"]))
         zf.writestr("README.txt",
             "Open index.html, summary.html, or formulas.html in any browser.\n"
             "KaTeX formulas render when connected to the internet.\n"
@@ -689,100 +727,131 @@ def build_zip(data: dict, base_name: str) -> io.BytesIO:
     return buf
 
 
-# ── Streamlit UI ──────────────────────────────────────────────────────────────
-st.set_page_config(page_title="Production Note Studio", page_icon="📒", layout="wide")
-
-# Inject sketchbook CSS globally
+# ═══════════════════════════════════════════════════════════════════════════════
+#  STREAMLIT UI
+# ═══════════════════════════════════════════════════════════════════════════════
+st.set_page_config(page_title="Production Note Studio", page_icon="🔬", layout="wide")
 st.markdown(f"<style>{CSS}</style>", unsafe_allow_html=True)
 
-st.title("📒 Production Note Studio")
-st.caption("Transform textbook PDFs & lecture decks into premium digital sketchbook notebooks.")
+st.title("🔬 Production Note Studio")
+st.caption("Transform textbook PDFs & lecture decks into premium scientific notes.")
 
-# Sidebar
+# ── Sidebar ────────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.header("⚙️ Configuration")
+    st.markdown("## ⚙️ Configuration")
+    st.divider()
 
+    # ── Provider ──
+    st.markdown("### 🤖 AI Provider")
     provider = st.radio(
-        "🤖 AI Provider",
-        ["🏠 Ollama (Free, No API Key)", "🆓 Gemini (Free API Key)", "💎 Claude (Paid — Best Quality)", "🧠 GPT-4.5 (OpenAI)"],
-        index=0,
-        help="Ollama runs 100% locally — no API key ever. Gemini has a free tier. Claude/GPT need paid keys."
+        "Provider",
+        ["🏠 Ollama", "🆓 Gemini", "💎 Claude", "🧠 OpenAI"],
+        label_visibility="collapsed",
+        help="Ollama = free local · Gemini = free tier · Claude/OpenAI = paid"
     )
 
     use_ollama = provider.startswith("🏠")
     use_gemini = provider.startswith("🆓")
     use_openai = provider.startswith("🧠")
+    use_claude = provider.startswith("💎")
+
+    # ── Model variant ──
+    st.markdown("### 🔧 Model")
 
     if use_ollama:
-        api_keys = []
         ollama_model = st.selectbox(
-            "Local Model",
-            ["llama3.2", "mistral", "gemma2:2b", "phi3", "qwen2.5"],
-            help="Run `ollama pull <model>` once to download it."
+            "Local model",
+            ["gemma2:2b", "llama3.2", "mistral", "phi3", "qwen2.5", "llava"],
+            help="Run `ollama pull <model>` once to download."
         )
-        st.info("▶ Make sure Ollama is running: `ollama serve`")
+        selected_model = ollama_model
+        api_keys = []
+        st.info("Make sure Ollama is running:\n```\nollama serve\n```")
+
     elif use_gemini:
+        selected_model = st.selectbox(
+            "Gemini model",
+            ["gemini-2.0-flash-lite", "gemini-1.5-flash", "gemini-2.0-flash"],
+            help="Flash Lite = fastest & free · 2.0 Flash = best quality"
+        )
         key_input = st.text_input(
-            "Gemini API Key",
-            type="password",
-            placeholder="AIza...",
-            help="Get a free key at https://aistudio.google.com/apikey",
+            "Gemini API Key", type="password", placeholder="AIza…",
+            help="[Get free key →](https://aistudio.google.com/apikey)"
         )
         api_keys = [key_input] if key_input.strip() else GEMINI_KEYS
-        ollama_model = None
-    elif use_openai:
-        key_input = st.text_input(
-            "OpenAI API Key",
-            type="password",
-            placeholder="sk-...",
-            help="Get your key at https://platform.openai.com/api-keys",
+        st.caption("[Get free Gemini key →](https://aistudio.google.com/apikey)")
+
+    elif use_claude:
+        selected_model = st.selectbox(
+            "Claude model",
+            ["claude-haiku-4-5-20251001", "claude-sonnet-4-6", "claude-opus-4-8"],
+            format_func=lambda m: MODEL_LABELS.get(m, m),
+            help="Haiku = cheapest · Sonnet = balanced · Opus = best quality"
         )
-        api_keys = [key_input] if key_input.strip() else OPENAI_KEYS
-        ollama_model = None
-    else:
         key_input = st.text_input(
-            "Claude API Key",
-            type="password",
-            placeholder="sk-ant-...",
-            help="Get your key at https://console.anthropic.com/",
+            "Claude API Key", type="password", placeholder="sk-ant-…",
+            help="[Get key →](https://console.anthropic.com/)"
         )
         api_keys = [key_input] if key_input.strip() else CLAUDE_KEYS
-        ollama_model = None
+        st.caption("[Get Claude key →](https://console.anthropic.com/)")
 
+    else:  # OpenAI
+        selected_model = st.selectbox(
+            "OpenAI model",
+            ["gpt-4o-mini", "gpt-4o", "gpt-4.5-preview"],
+            format_func=lambda m: MODEL_LABELS.get(m, m),
+            help="4o-mini = cheapest · 4o = best · 4.5 = most powerful"
+        )
+        key_input = st.text_input(
+            "OpenAI API Key", type="password", placeholder="sk-…",
+            help="[Get key →](https://platform.openai.com/api-keys)"
+        )
+        api_keys = [key_input] if key_input.strip() else OPENAI_KEYS
+        st.caption("[Get OpenAI key →](https://platform.openai.com/api-keys)")
+
+    # ── Subject ──
+    st.divider()
+    st.markdown("### 📚 Subject")
     subject = st.selectbox(
         "Subject",
-        ["Biology 🔬", "Physics ⚡", "Chemistry 🧪", "Mathematics 📐",
-         "History 📜", "Geography 🌍", "Economics 📊", "Computer Science 💻"],
+        ["Science 🔬", "Biology 🧬", "Physics ⚡", "Chemistry 🧪",
+         "Mathematics 📐", "History 📜", "Geography 🌍",
+         "Economics 📊", "Computer Science 💻"],
+        label_visibility="collapsed",
     )
-    st.divider()
-    st.markdown("**Supported formats:** PDF, PPTX")
-    if use_ollama:
-        st.markdown("**Runs locally — 100% free, no internet needed after model download.**")
-        st.markdown("[Install Ollama](https://ollama.com/download)")
-    elif use_gemini:
-        st.markdown("**Model:** gemini-2.0-flash-lite · [Get free key](https://aistudio.google.com/apikey)")
-    elif use_openai:
-        st.markdown("**Model:** gpt-4.5-preview · [Get key](https://platform.openai.com/api-keys)")
-    else:
-        st.markdown("**Model:** claude-haiku-4-5 (cost-efficient) · [Get key](https://console.anthropic.com/)")
 
-# Upload
-uploaded = st.file_uploader("Upload a Chapter PDF or Lecture Deck (.pptx)", type=["pdf", "pptx"])
+    # ── Info footer ──
+    st.divider()
+    model_display = MODEL_LABELS.get(selected_model, selected_model) if not use_ollama else selected_model
+    st.markdown(f"**Active model:** `{model_display}`")
+    st.markdown("**Formats:** PDF · PPTX")
+    if use_ollama:
+        st.markdown("[Install Ollama →](https://ollama.com/download)")
+
+
+# ── Main area ─────────────────────────────────────────────────────────────────
+uploaded = st.file_uploader(
+    "Upload a Chapter PDF or Lecture Deck (.pptx)",
+    type=["pdf", "pptx"]
+)
 
 if uploaded:
     if not use_ollama and not api_keys:
         provider_name = "Gemini" if use_gemini else ("OpenAI" if use_openai else "Anthropic")
         var_name = "GEMINI_API_KEYS" if use_gemini else ("OPENAI_API_KEYS" if use_openai else "CLAUDE_API_KEYS")
-        st.error(f"No {provider_name} API key configured. Set the `{var_name}` environment variable or add the key in the config block at the top of `app.py`.")
+        st.error(
+            f"No {provider_name} API key found. "
+            f"Enter it in the sidebar or set the `{var_name}` environment variable."
+        )
         st.stop()
-
 
     ext = uploaded.name.rsplit(".", 1)[-1].lower()
     base_name = uploaded.name
+    model_display = MODEL_LABELS.get(selected_model, selected_model) if not use_ollama else selected_model
 
     col1, col2 = st.columns([3, 1])
     with col1:
-        st.info(f"📄 **{base_name}** — ready to process")
+        st.info(f"📄 **{base_name}** — ready to process with **{model_display}**")
     with col2:
         run_btn = st.button("⚡ Generate Notes", type="primary", use_container_width=True)
 
@@ -791,67 +860,52 @@ if uploaded:
             st.write("📖 Extracting text from file…")
             file_buf = io.BytesIO(uploaded.read())
 
-            if ext == "pdf":
-                raw_text = extract_pdf(file_buf)
-            else:
-                raw_text = extract_pptx(file_buf)
-
+            raw_text = extract_pdf(file_buf) if ext == "pdf" else extract_pptx(file_buf)
             word_count = len(raw_text.split())
             st.write(f"✅ Extracted **{word_count:,} words** from {base_name}")
 
             if word_count < 50:
                 status.update(label="Extraction failed — too little text found.", state="error")
-                st.error("The file appears to have very little extractable text. Scanned image PDFs are not supported.")
+                st.error("The file has very little extractable text. Scanned image PDFs are not supported.")
                 st.stop()
 
             MAX_WORDS = 4000 if use_ollama else (5000 if use_gemini else 12000)
-            words = raw_text.split()
-            if len(words) > MAX_WORDS:
-                raw_text = " ".join(words[:MAX_WORDS])
-                st.warning(f"⚠️ Chapter has {word_count:,} words — processing first {MAX_WORDS:,} words. For full coverage use Claude or GPT-4.5.")
+            if word_count > MAX_WORDS:
+                raw_text = " ".join(raw_text.split()[:MAX_WORDS])
+                st.warning(f"⚠️ Truncated to first {MAX_WORDS:,} words (chapter had {word_count:,}). Use Claude/GPT for full coverage.")
 
-            if use_ollama:
-                provider_label = f"Ollama ({ollama_model})"
-            elif use_gemini:
-                provider_label = "Gemini"
-            elif use_openai:
-                provider_label = "GPT-4.5"
-            else:
-                provider_label = "Claude"
-            st.write(f"🤖 Sending to {provider_label} for note compilation…")
+            st.write(f"🤖 Sending to **{model_display}** for note compilation…")
             try:
                 if use_ollama:
-                    sections = call_ollama(raw_text, ollama_model, subject)
+                    sections = call_ollama(raw_text, selected_model, subject)
                 elif use_gemini:
-                    sections = call_gemini(raw_text, api_keys, subject)
+                    sections = call_gemini(raw_text, api_keys, subject, selected_model)
                 elif use_openai:
-                    sections = call_openai(raw_text, api_keys, subject)
+                    sections = call_openai(raw_text, api_keys, subject, selected_model)
                 else:
-                    sections = call_claude(raw_text, api_keys, subject)
+                    sections = call_claude(raw_text, api_keys, subject, selected_model)
             except Exception as e:
                 status.update(label="Error — see details below.", state="error")
-                st.error(f"**{provider_label} error:** {e}")
+                st.error(f"**{model_display} error:** {e}")
                 if use_ollama:
-                    st.info("Install Ollama from https://ollama.com/download, then run: ollama serve && ollama pull llama3.2")
+                    st.info("Ensure Ollama is running: `ollama serve` · Pull model: `ollama pull " + selected_model + "`")
                 elif use_gemini:
-                    st.info("Get a free Gemini key at https://aistudio.google.com/apikey — install SDK: pip install google-genai")
+                    st.info("pip install google-genai · Get free key: https://aistudio.google.com/apikey")
                 elif use_openai:
-                    st.info("Get an OpenAI key at https://platform.openai.com/api-keys — install SDK: pip install openai")
+                    st.info("pip install openai · Get key: https://platform.openai.com/api-keys")
                 else:
-                    st.info("Get a Claude key at https://console.anthropic.com/ — install SDK: pip install anthropic")
+                    st.info("pip install anthropic · Get key: https://console.anthropic.com/")
                 st.stop()
 
             st.write("📦 Building ZIP export package…")
             zip_buf = build_zip(sections, base_name)
+            status.update(label="✅ Notes ready!", state="complete", expanded=False)
 
-            status.update(label="Notes ready!", state="complete", expanded=False)
-
-        # Store in session state so tabs persist without re-running
-        st.session_state["sections"] = sections
-        st.session_state["zip_buf"]  = zip_buf
+        st.session_state["sections"]  = sections
+        st.session_state["zip_buf"]   = zip_buf
         st.session_state["base_name"] = base_name
 
-# Render results if available
+# ── Results ───────────────────────────────────────────────────────────────────
 if "sections" in st.session_state:
     sections  = st.session_state["sections"]
     zip_buf   = st.session_state["zip_buf"]
@@ -859,7 +913,7 @@ if "sections" in st.session_state:
 
     st.success(f"✅ Notebook generated for **{base_name}**")
 
-    tab1, tab2, tab3 = st.tabs(["🎨 Plain Paper Notes", "📌 Quick Highlights", "📐 Formula Sheet"])
+    tab1, tab2, tab3 = st.tabs(["🗒️ Detailed Notes", "⚡ Quick Highlights", "∑ Formula Sheet"])
 
     with tab1:
         st.markdown('<div class="note-paper">', unsafe_allow_html=True)

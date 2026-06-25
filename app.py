@@ -656,14 +656,16 @@ def call_openai(raw_text: str, api_keys: list, subject: str, model: str,
     last_err = None
     for key in api_keys:
         try:
-            if azure_endpoint.strip():
+            clean_endpoint = azure_endpoint.strip().strip('"').strip("'")
+            clean_deployment = azure_deployment.strip().strip('"').strip("'")
+            if clean_endpoint:
                 # Azure OpenAI — deployment name is used instead of model name
                 client = AzureOpenAI(
                     api_key=key,
-                    azure_endpoint=azure_endpoint.strip(),
-                    api_version=azure_api_version,
+                    azure_endpoint=clean_endpoint,
+                    api_version=azure_api_version.strip().strip('"').strip("'"),
                 )
-                deploy = azure_deployment.strip() or model
+                deploy = clean_deployment or model
                 resp = client.chat.completions.create(
                     model=deploy,
                     max_tokens=16000,

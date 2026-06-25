@@ -619,6 +619,7 @@ MODEL_LABELS = {
     "gpt-4o-mini":               "GPT-4o Mini",
     "gpt-4o":                    "GPT-4o",
     "gpt-4.5-preview":           "GPT-4.5",
+    "gpt-5.2":                   "GPT-5.2",
 }
 
 
@@ -798,7 +799,7 @@ with st.sidebar:
     else:  # OpenAI
         selected_model = st.selectbox(
             "OpenAI model",
-            ["gpt-4o-mini", "gpt-4o", "gpt-4.5-preview"],
+            ["gpt-4o-mini", "gpt-4o", "gpt-4.5-preview", "gpt-5.2"],
             format_func=lambda m: MODEL_LABELS.get(m, m),
             help="4o-mini = cheapest · 4o = best · 4.5 = most powerful"
         )

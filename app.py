@@ -804,7 +804,7 @@ with st.sidebar:
             help="4o-mini = cheapest · 4o = best · 4.5 = most powerful"
         )
         key_input = st.text_input(
-            "OpenAI API Key", type="password", placeholder="sk-…",
+            "OpenAI API Key", type="password", placeholder="Paste your OpenAI key…",
             help="[Get key →](https://platform.openai.com/api-keys)"
         )
         api_keys = [key_input] if key_input.strip() else OPENAI_KEYS
